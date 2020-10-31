@@ -565,15 +565,23 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @return the node, or null if none
      */
     final Node<K,V> getNode(int hash, Object key) {
+        // tab: 引用当前hashmap的散列表
+        // first: 桶位中的头元素
+        // e: 临时node元素
+        // n: table数组长度
         Node<K,V>[] tab; Node<K,V> first, e; int n; K k;
         if ((tab = table) != null && (n = tab.length) > 0 &&
             (first = tab[(n - 1) & hash]) != null) {
+            // 第一种情况: 定位出来的桶位元素 即为要get的数据
             if (first.hash == hash && // always check first node
                 ((k = first.key) == key || (key != null && key.equals(k))))
                 return first;
+            // 说明当前桶位不止一个元素, 可能是链表, 也可能是红黑树
             if ((e = first.next) != null) {
+                // 第二种情况: 桶位已经升级成了红黑树
                 if (first instanceof TreeNode)
                     return ((TreeNode<K,V>)first).getTreeNode(hash, key);
+                // 第三种情况: 桶位形成了链表
                 do {
                     if (e.hash == hash &&
                         ((k = e.key) == key || (key != null && key.equals(k))))
@@ -713,27 +721,44 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     else if (e instanceof TreeNode)
                         ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
                     else { // preserve order
+                        // 低位链表, 存放在扩容之后的数组下标位置, 与当前数组的下标位置一致
                         Node<K,V> loHead = null, loTail = null;
+                        // 高位链表, 存放在扩容之后的数组下标位置数组下标位置为: 当前数组下标位置 + 扩容之前数组长度
                         Node<K,V> hiHead = null, hiTail = null;
                         Node<K,V> next;
+                        // 对当前桶位链表进行复制, 复制到的下标为: ①原来的下标;②或原来的下标+原来数组的长度;
                         do {
                             next = e.next;
+                            // hash =   0 1111
+                            // oldCap = 1 0000
+                            // result        0
                             if ((e.hash & oldCap) == 0) {
+                                // hash值位数的高一位若为0
+                                // 还插到对应的老表下标位置
                                 if (loTail == null)
                                     loHead = e;
                                 else
                                     loTail.next = e;
+                                // 尾插
                                 loTail = e;
                             }
+                            // hash =   1 1111
+                            // oldCap = 1 0000
+                            // result   1 0000 (!= 0)
                             else {
+                                // hash值位数的高一位若为1
+                                // 插到扩充的新长度部分
                                 if (hiTail == null)
                                     hiHead = e;
                                 else
                                     hiTail.next = e;
+                                // 尾插
                                 hiTail = e;
                             }
                         } while ((e = next) != null);
+
                         if (loTail != null) {
+                            // 链表的next指针若没有指向节点了, 则把指针指向null, 高位同理
                             loTail.next = null;
                             newTab[j] = loHead;
                         }
@@ -812,9 +837,16 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     final Node<K,V> removeNode(int hash, Object key, Object value,
                                boolean matchValue, boolean movable) {
+        // tab: 引用当前hashmap的散列表
+        // p: 当前node元素
+        // n: 表示散列表数组长度
+        // index: 表示寻址结果
         Node<K,V>[] tab; Node<K,V> p; int n, index;
         if ((tab = table) != null && (n = tab.length) > 0 &&
             (p = tab[index = (n - 1) & hash]) != null) {
+            // 说明路由到的桶位是有数据的,需要进行查找操作,并且删除
+            // node: 查找到的结果
+            // e: 当前node的下一个元素
             Node<K,V> node = null, e; K k; V v;
             if (p.hash == hash &&
                 ((k = p.key) == key || (key != null && key.equals(k))))
@@ -834,13 +866,17 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     } while ((e = e.next) != null);
                 }
             }
+            // 判断node不为空的话, 说明按照key查找到需要删除的节点了
             if (node != null && (!matchValue || (v = node.value) == value ||
                                  (value != null && value.equals(v)))) {
+                // 第一种情况: node是树节点, 说明需要进行树节点移除操作
                 if (node instanceof TreeNode)
                     ((TreeNode<K,V>)node).removeTreeNode(this, tab, movable);
+                // 第二种情况: 桶位元素即为查找结果, 则将该元素的下一个元素放至桶位中
                 else if (node == p)
                     tab[index] = node.next;
                 else
+                    // 第三种情况: 将当前元素p的下一个元素设置成要删除元素的下一个元素
                     p.next = node.next;
                 ++modCount;
                 --size;
