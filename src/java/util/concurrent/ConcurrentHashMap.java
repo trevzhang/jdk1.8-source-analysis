@@ -692,12 +692,12 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * to incorporate impact of the highest bits that would otherwise
      * never be used in index calculations because of table bounds.
      *
-     * 1100 0011 1010 0101 0001 1100 0001 1110
-     * 0000 0000 0000 0000 1100 0011 1010 0101
-     * 1100 0011 1010 0101 1101 1111 1011 1011
-     * ---------------------------------------
-     * 1100 0011 1010 0101 1101 1111 1011 1011
-     * 0111 1111 1111 1111 1111 1111 1111 1111
+     * 1100 0011 1010 0101 0001 1100 0001 1110 h
+     * 0000 0000 0000 0000 1100 0011 1010 0101 h >>> 16
+     * 1100 0011 1010 0101 1101 1111 1011 1011 h ^ (h >>> 16)
+     * ---------------------------------------       ↓
+     * 1100 0011 1010 0101 1101 1111 1011 1011 h ^ (h >>> 16)
+     * 0111 1111 1111 1111 1111 1111 1111 1111 HASH_BITS (作用: 变正数)
      * 0100 0011 1010 0101 1101 1111 1011 1011
      */
     static final int spread(int h) {
@@ -3245,7 +3245,6 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * not) to complete before tree restructuring operations.
      */
     static final class TreeBin<K,V> extends Node<K,V> {
-        //红黑树 根节点 小刘讲师录制的红黑树教程：av83540396
         TreeNode<K,V> root;
         //链表的头节点
         volatile TreeNode<K,V> first;
