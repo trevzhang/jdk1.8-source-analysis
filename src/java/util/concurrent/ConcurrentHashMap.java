@@ -1742,6 +1742,8 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 p = next;
             }
             table = tab;
+            // sizeCtl计算为下次扩容的阈值大小
+            // 如n = 16, sizeCtl = 16 - 4 = 12
             sizeCtl = n - (n >>> 2);
             baseCount = added;
         }
