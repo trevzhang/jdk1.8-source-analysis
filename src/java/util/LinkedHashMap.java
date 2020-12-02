@@ -302,22 +302,36 @@ public class LinkedHashMap<K,V>
         }
     }
 
+    // accessOrder为true才会调用此方法, true代表按读取顺序排列, 链表表尾是最近读取的节点
     void afterNodeAccess(Node<K,V> e) { // move node to last
         LinkedHashMap.Entry<K,V> last;
         if (accessOrder && (last = tail) != e) {
+            // p: 当前节点
+            // b: 前一个节点
+            // a: 后一个节点
+            // 结构为: b <=> p <=> a
             LinkedHashMap.Entry<K,V> p =
                 (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
+            // 结构变成: b <=> p <- a
             p.after = null;
+            // 如果当前节点 p 本身是头节点, 那么头结点要改成 a
             if (b == null)
                 head = a;
+                // 如果 p 不是头尾节点, 把前后节点连接, 变成: b -> a
             else
                 b.after = a;
+            // a 非空, 和 b 连接, 变成: b <- a
             if (a != null)
                 a.before = b;
+                // 如果 a 为空, 说明 p 是尾节点, b 就是它的前一个节点, 符合 last 的定义
+                // 这个 else 没有意义，因为最开头if已经确保了p不是尾结点了，自然after不会是null
+                // 结构变为: b <=> a
             else
                 last = b;
+            // 如果这是空链表, p 改成头结点
             if (last == null)
                 head = p;
+                // 否则把 p 插入到链表尾部, 变成: b <=> a <=> ... <=> p -> null
             else {
                 p.before = last;
                 last.after = p;
